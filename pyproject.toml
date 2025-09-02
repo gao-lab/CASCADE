@@ -50,7 +50,7 @@ license = { file = "LICENSE" }
 name = "cascade-reg"
 readme = "README.md"
 requires-python = ">=3.8"
-version = "0.5.0"
+version = "0.5.1"
 
 [project.optional-dependencies]
 doc = [

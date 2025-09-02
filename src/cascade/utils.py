@@ -3,6 +3,7 @@ Miscellaneous utilities
 """
 
 import os
+import sys
 import uuid
 from collections import defaultdict
 from collections.abc import Hashable, Iterable
@@ -714,6 +715,8 @@ def check_affinity_inheritance() -> None:
     r"""
     Check whether affinity inheritance is broken
     """
+    if sys.platform != "linux" or not hasattr(os, "sched_getaffinity"):
+        return  # no-op on macOS/Windows
     q = Queue()
     p = Process(target=_subprocess_affinity, args=(q,))
     p.start()
