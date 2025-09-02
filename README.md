@@ -1,5 +1,6 @@
 # Causal discovery of gene regulatory programs from single-cell genomics
 
+[![pypi-badge](https://img.shields.io/pypi/v/cascade-reg)](https://pypi.org/project/cascade-reg)
 [![build-badge](https://github.com/gao-lab/CASCADE/actions/workflows/build.yml/badge.svg)](https://github.com/gao-lab/CASCADE/actions/workflows/build.yml)
 [![codecov-badge](https://codecov.io/gh/gao-lab/CASCADE/graph/badge.svg?token=49YVG6XHSG)](https://codecov.io/gh/gao-lab/CASCADE)
 [![license-badge](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

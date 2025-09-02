@@ -9,10 +9,7 @@ Single-cell data
 A list of example single-cell perturbation datasets:
 
 - `Norman-2019.h5ad <http://ftp.cbi.pku.edu.cn/pub/cascade-download/Norman-2019.h5ad>`_
-
-A list of example target datasets:
-
-- `Xu-2022.h5ad <http://ftp.cbi.pku.edu.cn/pub/cascade-download/Xu-2022.h5ad>`_
+- Check back for more
 
 Scaffold graphs
 ---------------
