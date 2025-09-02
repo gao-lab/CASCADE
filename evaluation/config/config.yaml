@@ -1,0 +1,685 @@
+gpu_prefix:
+  ""
+  # gpus=(0 1 2 3 4 5 6 7);
+  # i=$((RANDOM % ${#gpus[@]}));
+  # export CUDA_VISIBLE_DEVICES=${gpus[$i]};
+cascade_prefix:
+  ""
+  # export CASCADE_CUDA_REMAP=1;
+cmd_prefix: "timeout 24h "
+
+scf_resources:
+  kegg: ../data/scaffold/KEGG/inferred_kegg_gene_only.gml.gz
+  tf: ../data/scaffold/TF-target/TF-target.gml.gz
+  ppi: ../data/scaffold/BioGRID/biogrid.gml.gz
+  corr: ../data/scaffold/GTEx/corr.gml.gz
+aux_resources:
+  go_path: ../data/function/GO
+  go: ../data/function/GO/go_essential_all.gml.gz
+  lsi: ../data/function/GO/gene2gos_lsi.csv.gz
+  scgpt: ../data/embeddings/scgpt/gene_embeddings.csv.gz
+top_de:
+  - 20
+  - 80
+  - 320
+top_design: 5
+
+datasets:
+  Adamson-2016:
+    gph: ../data/scaffold/TRRUST/trrust.gml.gz
+    dat: ../data/datasets/Adamson-2016.h5ad
+    interv: knockdown
+    covariate: covariate
+  Norman-2019:
+    gph: ../data/scaffold/TRRUST/trrust.gml.gz
+    dat: ../data/datasets/Norman-2019.h5ad
+    interv: knockup
+    covariate: covariate
+  Replogle-2022-RPE1:
+    gph: ../data/scaffold/TRRUST/trrust.gml.gz
+    dat: ../data/datasets/Replogle-2022-RPE1.h5ad
+    interv: knockdown
+    covariate: covariate
+  Replogle-2022-K562-ess:
+    gph: ../data/scaffold/TRRUST/trrust.gml.gz
+    dat: ../data/datasets/Replogle-2022-K562-ess.h5ad
+    interv: knockdown
+    covariate: covariate
+  Replogle-2022-K562-gwps:
+    gph: ../data/scaffold/TRRUST/trrust.gml.gz
+    dat: ../data/datasets/Replogle-2022-K562-gwps.h5ad
+    interv: knockdown
+    covariate: covariate
+
+# -------------------------------- Simulation ----------------------------------
+
+sim_disc:
+  ctx:
+    n_vars:
+      - 20
+      - 40
+      - 80
+      - 160
+      - 320
+    in_deg: 0.1
+    gph_tp: unif
+    gph_sd: 4
+  dat:
+    n_obs: 50000
+    int_f:
+      - 0.0
+      - 0.25
+      - 0.5
+      - 0.75
+      - 1.0
+    act: ident
+    snr: 5.0
+    dat_sd: 1
+  sub:
+    sub_f: 1.0
+    sub_sd: 1
+  scf: cpl
+  aux: nil
+  div:
+    kg: 1.0
+    kc: 1.0
+    div_sd: 1
+  meth:
+    pc:
+      alpha: 0.01
+    ges:
+      score: GaussL0penObsScore
+    gies:
+      score: GaussL0penIntScore
+    icp:
+      deg_limit: 3
+      alpha: 0.05
+    notears:
+      hid: 10
+      lam1: 0.01
+      lam2: 0.01
+      run_sd: 1
+    nobears:
+      poly: 3
+      rho: 10.0
+      run_sd: 1
+    dcdi:
+      layer: 2
+      hid: 16
+      nonlin: leaky-relu
+      reg: 0.1
+      run_sd: 1
+    dcdfg:
+      n_mod: 20
+      reg: 0.1
+      cstr: exp
+      model: mlplr
+      poly: false
+      run_sd: 1
+    dagma:
+      hid: 10
+      lam1: 0.02
+      lam2: 0.005
+      T: 4
+      run_sd: 1
+    cascade:
+      nptc: 1
+      dz: 0
+      beta: 0.0
+      sps: L1
+      acyc: SpecNorm
+      lik: Normal
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+
+sim_disc_scf:
+  ctx:
+    n_vars: 320
+    in_deg: 0.1
+    gph_tp: unif
+    gph_sd: 1
+  dat:
+    n_obs: 50000
+    int_f: 0.5
+    act: ident
+    snr: 5.0
+    dat_sd: 1
+  sub:
+    sub_f: 1.0
+    sub_sd: 1
+  scf:
+    tpr:
+      - 1.0
+      - 0.9
+      - 0.8
+      - 0.7
+    fpr:
+      - 0.1
+      - 0.2
+      - 0.3
+      - 0.4
+    scf_sd: 4
+  aux: nil
+  div:
+    kg: 1.0
+    kc: 1.0
+    div_sd: 1
+  meth:
+    pc:
+      alpha: 0.01
+    ges:
+      score: GaussL0penObsScore
+    gies:
+      score: GaussL0penIntScore
+    cascade:
+      nptc: 1
+      dz: 0
+      beta: 0.0
+      sps: L1
+      acyc: SpecNorm
+      lik: Normal
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+
+sim_scale:
+  ctx:
+    n_vars:
+      - 20
+      - 40
+      - 80
+      - 160
+      - 320
+      - 640
+      - 1280
+    in_deg: 0.1
+    gph_tp: unif
+    gph_sd: 4
+  dat:
+    n_obs: 50000
+    int_f: 0.5
+    act: ident
+    snr: 5.0
+    dat_sd: 1
+  sub:
+    sub_f: 1.0
+    sub_sd: 1
+  scf:
+    - cpl
+    - tpr=1.0-fpr=0.1-scf_sd=0
+  aux: nil
+  div:
+    kg: 1.0
+    kc: 1.0
+    div_sd: 1
+  meth:
+    pc:
+      alpha: 0.01
+    ges:
+      score: GaussL0penObsScore
+    gies:
+      score: GaussL0penIntScore
+    icp:
+      deg_limit: 3
+      alpha: 0.05
+    notears:
+      hid: 10
+      lam1: 0.01
+      lam2: 0.01
+      run_sd: 1
+    nobears:
+      poly: 3
+      rho: 10.0
+      run_sd: 1
+    dcdi:
+      layer: 2
+      hid: 16
+      nonlin: leaky-relu
+      reg: 0.1
+      run_sd: 1
+    dcdfg:
+      n_mod: 20
+      reg: 0.1
+      cstr: exp
+      model: mlplr
+      poly: false
+      run_sd: 1
+    dagma:
+      hid: 10
+      lam1: 0.02
+      lam2: 0.005
+      T: 4
+      run_sd: 1
+    cascade:
+      nptc: 1
+      dz: 0
+      beta: 0.0
+      sps: L1
+      acyc: SpecNorm
+      lik: Normal
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+
+# ---------------------------------- Actual ------------------------------------
+
+actual_disc:
+  ctx:
+    ds:
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp:
+      - 0
+      - 5
+      - 10
+      - 20
+      - 50
+  sub:
+    n_vars: 200
+  scf: cpl
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    ges:
+      score: GaussL0penObsScore
+    gies:
+      score: GaussL0penIntScore
+    nobears:
+      poly: 3
+      rho: 10.0
+      run_sd: 1
+    dcdfg:
+      n_mod: 20
+      reg: 0.1
+      cstr: exp
+      model: mlplr
+      poly: false
+      run_sd: 1
+    dagma:
+      hid: 10
+      lam1: 0.02
+      lam2: 0.005
+      T: 4
+      run_sd: 1
+    cascade:
+      nptc: 4
+      dz: 16
+      beta: 0.1
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+
+actual_disc_hparams:
+  ctx:
+    ds:
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 200
+  scf: cpl
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    cascade:
+      nptc:
+        default: 4
+        choices:
+          - 1
+          - 2
+          - 4
+          - 8
+      dz:
+        default: 16
+        choices:
+          - 4
+          - 8
+          - 16
+          - 32
+      beta:
+        default: 0.1
+        choices:
+          - 0.001
+          - 0.01
+          - 0.1
+          - 1.0
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam:
+        default: 0.1
+        choices:
+          - 0.001
+          - 0.01
+          - 0.1
+          - 1.0
+      alp:
+        default: 0.5
+        choices:
+          - 0.1
+          - 0.2
+          - 0.5
+          - 1.0
+      run_sd: 0
+
+actual_disc_full:
+  ctx:
+    ds:
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 2000
+  scf: kegg+tf+ppi+corr
+  aux: lsi
+  div:
+    kg: 1.0
+    kc: 1.0
+    div_sd: 1
+  meth:
+    cascade:
+      nptc: 4
+      dz: 16
+      beta: 0.1
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam: 0.1
+      alp: 0.5
+      run_sd: 2
+      tune_ct: True
+
+actual_ctfact:
+  ctx:
+    ds:
+      - Adamson-2016
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 2000
+  scf: kegg+tf+ppi+corr
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    mean: run
+    additive: run
+    linear:
+      dim: 10
+      lam: 0.1
+      run_sd: 1
+    cpa:
+      run_sd: 1
+    biolord:
+      run_sd: 1
+    gears:
+      hidden_size: 64
+      epochs: 20
+      run_sd: 1
+    scgpt:
+      epochs: 20
+      run_sd: 1
+    scfoundation:
+      hidden_size: 512
+      epochs: 20
+      run_sd: 1
+    state:
+      cell_set_len: 32
+      hidden_dim: 128
+      run_sd: 1
+    cascade:
+      nptc: 4
+      dz: 16
+      beta: 0.1
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+      tune_ct: True
+      ablt: none
+
+actual_ctfact_ablt:
+  ctx:
+    ds:
+      - Adamson-2016
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 2000
+  scf: kegg+tf+ppi+corr
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    cascade:
+      nptc: 4
+      dz: 16
+      beta: 0.1
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+      tune_ct: True
+      ablt:
+        - none
+        - latent
+        - graph
+        - interv
+
+actual_ctfact_hparams:
+  ctx:
+    ds:
+      - Adamson-2016
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 2000
+  scf: kegg+tf+ppi+corr
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    cascade:
+      nptc:
+        default: 4
+        choices:
+          - 1
+          - 2
+          - 4
+          - 8
+      dz:
+        default: 16
+        choices:
+          - 4
+          - 8
+          - 16
+          - 32
+      beta:
+        default: 0.1
+        choices:
+          - 0.001
+          - 0.01
+          - 0.1
+          - 1.0
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam:
+        default: 0.1
+        choices:
+          - 0.001
+          - 0.01
+          - 0.1
+          - 1.0
+      alp:
+        default: 0.5
+        choices:
+          - 0.1
+          - 0.2
+          - 0.5
+          - 1.0
+      run_sd: 0
+      tune_ct: True
+      ablt: none
+
+actual_dsgn:
+  ctx:
+    ds:
+      - Adamson-2016
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 2000
+  scf: kegg+tf+ppi+corr
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    additive: run
+    linear:
+      dim: 10
+      lam: 0.1
+      run_sd: 1
+    cpa:
+      run_sd: 1
+    biolord:
+      run_sd: 1
+    gears:
+      hidden_size: 64
+      epochs: 20
+      run_sd: 1
+    scgpt:
+      epochs: 20
+      run_sd: 1
+    scfoundation:
+      hidden_size: 512
+      epochs: 20
+      run_sd: 1
+    cascade:
+      nptc: 4
+      dz: 16
+      beta: 0.1
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam: 0.1
+      alp: 0.5
+      run_sd: 1
+      tune_ct: True
+      dsgn:
+        # - df
+        - sb
+        - bf
+
+actual_dsgn_hparams:
+  ctx:
+    ds:
+      - Adamson-2016
+      - Replogle-2022-RPE1
+      - Replogle-2022-K562-ess
+      - Replogle-2022-K562-gwps
+      - Norman-2019
+  dat:
+    imp: 20
+  sub:
+    n_vars: 2000
+  scf: kegg+tf+ppi+corr
+  aux: lsi
+  div:
+    kg: 0.9
+    kc: 0.75
+    div_sd: 5
+  meth:
+    cascade:
+      nptc:
+        default: 4
+        choices:
+          - 1
+          - 2
+          - 4
+          - 8
+      dz:
+        default: 16
+        choices:
+          - 4
+          - 8
+          - 16
+          - 32
+      beta:
+        default: 0.1
+        choices:
+          - 0.001
+          - 0.01
+          - 0.1
+          - 1.0
+      sps: L1
+      acyc: SpecNorm
+      lik: NegBin
+      lam:
+        default: 0.1
+        choices:
+          - 0.001
+          - 0.01
+          - 0.1
+          - 1.0
+      alp:
+        default: 0.5
+        choices:
+          - 0.1
+          - 0.2
+          - 0.5
+          - 1.0
+      run_sd: 0
+      tune_ct: True
+      dsgn:
+        default: sb
+        choices:
+          - df
+          - sb
+          - bf

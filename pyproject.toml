@@ -1,0 +1,104 @@
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
+
+[project]
+authors = [{ name = "Zhi-Jie Cao", email = "caozj@mail.cbi.pku.edu.cn" }]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+  "anndata",
+  "adjustText",
+  "kneed",
+  "loguru",
+  "matplotlib",
+  "networkx",
+  "numpy",
+  "pandas",
+  "pynvml",
+  "pytorch-lightning>=2",
+  "pyyaml",
+  "rich",
+  "scanpy",
+  "scikit-learn",
+  "scipy",
+  "seaborn",
+  "tensorboard",
+  "torch>=2",
+]
+description = "Causal discovery of gene regulatory programs from single-cell genomics"
+keywords = [
+  "bioinformatics",
+  "causal-discovery",
+  "causal-inference",
+  "deep-learning",
+  "gene-regulatory-network",
+  "single-cell",
+]
+license = { file = "LICENSE" }
+name = "cascade-reg"
+readme = "README.md"
+requires-python = ">=3.8"
+version = "0.5.0"
+
+[project.optional-dependencies]
+doc = [
+  "sphinx",
+  "sphinx-autobuild",
+  "sphinx-autodoc-typehints",
+  "sphinx-rtd-theme",
+  "sphinx-copybutton",
+  "sphinxcontrib-programoutput",
+  "nbsphinx",
+]
+test = [
+  "allpairspy",
+  "black<25",
+  "dynamicTreeCut",
+  "filelock",
+  "flake8",
+  "opencv-python",
+  "plotly",
+  "pytest-cov",
+  "pytest",
+]
+
+[project.urls]
+Github = "https://github.com/gao-lab/CASCADE-dev"
+
+[project.scripts]
+cascade = "cascade.main:main"
+
+[tool.flit.module]
+name = "cascade"
+
+[tool.flit.sdist]
+exclude = [".*", "c*", "d*", "e*", "r*", "t*", "m*"]
+
+[tool.isort]
+include_trailing_comma = true
+multi_line_output = 3
+profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore", "default:::cascade"]
+
+[tool.coverage.run]
+omit = ["src/cascade/ri.py"]
+source = ["src/cascade"]
+parallel = true
+
+[tool.coverage.report]
+show_missing = true

@@ -1,0 +1,47 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%post
+    micromamba create -n v8 -y -c conda-forge anndata=0.8
+    micromamba create -n v7 -y -c conda-forge anndata=0.7
+    micromamba clean -y -a
+    cd /usr/local/bin
+
+    echo '#!/usr/bin/env python
+from sys import argv
+from pickle import dump
+from anndata import read_h5ad
+with open(argv[2], "wb") as f:
+    dump(read_h5ad(argv[1]), f)
+' > read-anndata
+
+    echo '#!/usr/bin/env python
+from sys import argv
+from pickle import load
+with open(argv[1], "rb") as f:
+    load(f).write(argv[2], compression="gzip")
+' > write-anndata
+
+    echo '#!/bin/bash
+set -e
+tmp="$(mktemp -p $(dirname $2))"
+micromamba run -n v8 read-anndata "$1" "$tmp"
+micromamba run -n v7 write-anndata "$tmp" "$2"
+rm "$tmp"
+' > downgrade-anndata
+
+    echo '#!/bin/bash
+set -e
+tmp="$(mktemp -p $(dirname $2))"
+micromamba run -n v7 read-anndata "$1" "$tmp"
+micromamba run -n v8 write-anndata "$tmp" "$2"
+rm "$tmp"
+' > upgrade-anndata
+
+    chmod a+x read-anndata write-anndata downgrade-anndata upgrade-anndata
+
+%apprun downgrade
+    exec downgrade-anndata "$@"
+
+%apprun upgrade
+    exec upgrade-anndata "$@"

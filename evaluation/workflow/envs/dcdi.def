@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%environment
+    export PYTHONPATH=/opt/dcdi:$PYTHONPATH
+
+%post
+    apt update && apt install -y git && rm -rf /var/lib/apt/lists/*
+    git clone https://github.com/slachapelle/dcdi /opt/dcdi
+    sed -i \
+        -e 's|self.convert_masks(np.array(\[mask_idx\]))|&.cpu()|g' \
+        -e 's|torch.as_tensor(sample_idxs).long()|&.cpu()|g' \
+        /opt/dcdi/dcdi/data.py  # Fix GPU support
+    sed -i \
+        -e 's|sid = |&None  # |g' \
+        -e 's|shd = |&None  # |g' \
+        -e 's|shd_cpdag = |&None  # |g' \
+        /opt/dcdi/dcdi/train.py  # Skip metrics computation
+    micromamba install -n base -y -c conda-forge \
+        "pytorch-gpu<2" \
+        "matplotlib-base<3.3" \
+        cdt \
+        networkx \
+        pyyaml \
+        seaborn \
+        anndata
+    micromamba clean -y -a
+
+%runscript
+    exec micromamba run python "$@"

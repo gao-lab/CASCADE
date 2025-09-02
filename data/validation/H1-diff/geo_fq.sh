@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+
+cp Rawdata/20250527-GTZ-1-2/20250527-GTZ-1-2_R1.fq.gz GEO/hESC_rep1_R1.fq.gz
+cp Rawdata/20250527-GTZ-1-2/20250527-GTZ-1-2_R2.fq.gz GEO/hESC_rep1_R2.fq.gz
+cp Rawdata/20250527-GTZ-1-3/20250527-GTZ-1-3_R1.fq.gz GEO/hESC_rep2_R1.fq.gz
+cp Rawdata/20250527-GTZ-1-3/20250527-GTZ-1-3_R2.fq.gz GEO/hESC_rep2_R2.fq.gz
+cp Rawdata/20250602-GTZ-1-1/20250602-GTZ-1-1_R1.fq.gz GEO/iNPC_d4_rep1_R1.fq.gz
+cp Rawdata/20250602-GTZ-1-1/20250602-GTZ-1-1_R2.fq.gz GEO/iNPC_d4_rep1_R2.fq.gz
+cp Rawdata/20250602-GTZ-1-2/20250602-GTZ-1-2_R1.fq.gz GEO/iNPC_d4_rep2_R1.fq.gz
+cp Rawdata/20250602-GTZ-1-2/20250602-GTZ-1-2_R2.fq.gz GEO/iNPC_d4_rep2_R2.fq.gz
+cp Rawdata/20250527-GTZ-1-4/20250527-GTZ-1-4_R1.fq.gz GEO/iNPC_d7_rep1_R1.fq.gz
+cp Rawdata/20250527-GTZ-1-4/20250527-GTZ-1-4_R2.fq.gz GEO/iNPC_d7_rep1_R2.fq.gz
+cp Rawdata/20250527-GTZ-2-2/20250527-GTZ-2-2_R1.fq.gz GEO/iNPC_d7_rep2_R1.fq.gz
+cp Rawdata/20250527-GTZ-2-2/20250527-GTZ-2-2_R2.fq.gz GEO/iNPC_d7_rep2_R2.fq.gz
+cp Rawdata/20250529-GTZ-1-2/20250529-GTZ-1-2_R1.fq.gz GEO/iNPC_d7_rep3_R1.fq.gz
+cp Rawdata/20250529-GTZ-1-2/20250529-GTZ-1-2_R2.fq.gz GEO/iNPC_d7_rep3_R2.fq.gz
+cp Rawdata/20250527-GTZ-1-1/20250527-GTZ-1-1_R1.fq.gz GEO/PAX6_rep1_R1.fq.gz
+cp Rawdata/20250527-GTZ-1-1/20250527-GTZ-1-1_R2.fq.gz GEO/PAX6_rep1_R2.fq.gz
+cp Rawdata/20250706-GTZ-1-1/20250706-GTZ-1-1_R1.fq.gz GEO/PAX6_rep2_R1.fq.gz
+cp Rawdata/20250706-GTZ-1-1/20250706-GTZ-1-1_R2.fq.gz GEO/PAX6_rep2_R2.fq.gz
+cp Rawdata/20250706-GTZ-1-2/20250706-GTZ-1-2_R1.fq.gz GEO/PAX6_rep3_R1.fq.gz
+cp Rawdata/20250706-GTZ-1-2/20250706-GTZ-1-2_R2.fq.gz GEO/PAX6_rep3_R2.fq.gz
+cp Rawdata/20250716-GTZ-1-1/20250716-GTZ-1-1_R1.fq.gz GEO/TFAP2A_rep1_R1.fq.gz
+cp Rawdata/20250716-GTZ-1-1/20250716-GTZ-1-1_R2.fq.gz GEO/TFAP2A_rep1_R2.fq.gz
+cp Rawdata/20250716-GTZ-1-2/20250716-GTZ-1-2_R1.fq.gz GEO/TFAP2A_rep2_R1.fq.gz
+cp Rawdata/20250716-GTZ-1-2/20250716-GTZ-1-2_R2.fq.gz GEO/TFAP2A_rep2_R2.fq.gz
+cp Rawdata/20250716-GTZ-1-3/20250716-GTZ-1-3_R1.fq.gz GEO/TFAP2A_rep3_R1.fq.gz
+cp Rawdata/20250716-GTZ-1-3/20250716-GTZ-1-3_R2.fq.gz GEO/TFAP2A_rep3_R2.fq.gz
+cp Rawdata/20250716-GTZ-1-4/20250716-GTZ-1-4_R1.fq.gz GEO/TFAP2A_rep4_R1.fq.gz
+cp Rawdata/20250716-GTZ-1-4/20250716-GTZ-1-4_R2.fq.gz GEO/TFAP2A_rep4_R2.fq.gz
+cp Rawdata/20250527-GTZ-2-1/20250527-GTZ-2-1_R1.fq.gz GEO/PAX6+TFAP2A_rep1_R1.fq.gz
+cp Rawdata/20250527-GTZ-2-1/20250527-GTZ-2-1_R2.fq.gz GEO/PAX6+TFAP2A_rep1_R2.fq.gz
+cp Rawdata/20250701-GTZ-1-1/20250701-GTZ-1-1_R1.fq.gz GEO/PAX6+TFAP2A_rep2_R1.fq.gz
+cp Rawdata/20250701-GTZ-1-1/20250701-GTZ-1-1_R2.fq.gz GEO/PAX6+TFAP2A_rep2_R2.fq.gz
+cp Rawdata/20250701-GTZ-1-2/20250701-GTZ-1-2_R1.fq.gz GEO/PAX6+TFAP2A_rep3_R1.fq.gz
+cp Rawdata/20250701-GTZ-1-2/20250701-GTZ-1-2_R2.fq.gz GEO/PAX6+TFAP2A_rep3_R2.fq.gz

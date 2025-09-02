@@ -1,0 +1,406 @@
+from os.path import join
+import yaml
+
+
+configfile: "config.yaml"
+
+
+MODEL_PAT = (
+    "nptc={nptc}-dz={dz}-beta={beta}-sps={sps}-acyc={acyc}-lik={lik}-"
+    "lam={lam}-alp={alp}-run_sd={run_sd}"
+)
+DESIGN_PAT = "target={target}-size={size}"
+
+
+def pert_choice(target):
+    with open("choice.yaml") as f:
+        return yaml.load(f, Loader=yaml.Loader)["design"][target]
+
+
+def size_choice(target):
+    return len(pert_choice(target).split(","))
+
+
+rule all:
+    input:
+        "design_summary.xlsx",
+        "overview_selected.pdf",
+        expand(
+            join("model", MODEL_PAT, "design", DESIGN_PAT, "{files}"),
+            **config["model"],
+            **config["design"],
+            files=["ctfact.h5ad", "curve.pdf", "scores.pdf"],
+        ),
+    localrule: True
+
+
+rule overview:
+    input:
+        [
+            expand(
+                join("model", MODEL_PAT, "design", DESIGN_PAT, "{files}"),
+                **config["model"],
+                target=target,
+                size=size_choice(target),
+                files=[
+                    f"volcano_{pert_choice(target)}.pdf",
+                    f"gsea_{pert_choice(target)}",
+                    f"explain_{pert_choice(target)}.gml",
+                ],
+            )
+            for target in config["design"]["target"]
+        ],
+    output:
+        "overview_all.pdf",
+        "overview_selected.pdf",
+    localrule: True
+    shell:
+        "python -u overview.py"
+
+
+rule summarize_design:
+    input:
+        "known_drivers.csv",
+        expand(
+            join("model", MODEL_PAT, "design", DESIGN_PAT, "{file}"),
+            **config["model"],
+            **config["design"],
+            file=["design.csv", "explained.csv"],
+        ),
+    output:
+        "design_summary.xlsx",
+    params:
+        pattern=lambda wildcards: join(
+            "model", MODEL_PAT, "design", DESIGN_PAT, "{file}"
+        ),
+    localrule: True
+    script:
+        "summarize_design.py"
+
+
+rule s01_preprocess:
+    input:
+        "../../data/datasets/Joung-2023-subsample.h5ad",
+        "../../data/datasets/Cao-2020.h5ad",
+        "../../data/scaffold/KEGG/inferred_kegg_gene_only.gml.gz",
+        "../../data/scaffold/TF-target/TF-target.gml.gz",
+        "../../data/scaffold/BioGRID/biogrid.gml.gz",
+        "../../data/scaffold/GTEx/corr.gml.gz",
+    output:
+        "adata.h5ad",
+        "ctrl.h5ad",
+        "scaffold.gml.gz",
+        "go_lsi.csv.gz",
+        expand(
+            "targets/{target}.{ext}",
+            target=config["design"]["target"],
+            ext=["h5ad", "txt"],
+        ),
+    log:
+        "preprocess.log",
+    shell:
+        "python -u preprocess.py &> {log}"
+
+
+rule s02_discover:
+    input:
+        data="adata.h5ad",
+        scaffold="scaffold.gml.gz",
+        latent_data="go_lsi.csv.gz",
+    output:
+        model=join("model", MODEL_PAT, "discover.pt"),
+        info=join("model", MODEL_PAT, "info_discover.yaml"),
+    log:
+        join("model", MODEL_PAT, "discover.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    params:
+        log_dir=lambda wildcards: join(
+            "model", MODEL_PAT.format(**wildcards), "log_dir"
+        ),
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade discover "
+        "-d {input.data} "
+        "-m {output.model} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--n-particles {wildcards.nptc} "
+        "--latent-dim {wildcards.dz} "
+        "--beta {wildcards.beta} "
+        "--sparse-mod {wildcards.sps} "
+        "--acyc-mod {wildcards.acyc} "
+        "--latent-mod EmbLatent "
+        "--lik-mod {wildcards.lik} "
+        "--scaffold-graph {input.scaffold} "
+        "--latent-data {input.latent_data} "
+        "--lam {wildcards.lam} "
+        "--alpha {wildcards.alp} "
+        "--random-seed {wildcards.run_sd} "
+        "--log-dir {params.log_dir} "
+        "--n-devices {resources.gpu} "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule s03_acyclify:
+    input:
+        join("model", MODEL_PAT, "discover.pt"),
+    output:
+        graph=join("model", MODEL_PAT, "discover.gml.gz"),
+        info=join("model", MODEL_PAT, "info_acyclify.yaml"),
+    log:
+        join("model", MODEL_PAT, "acyclify.log"),
+    threads: lambda wildcards: int(wildcards.nptc)
+    shell:
+        "cascade acyclify "
+        "-m {input} "
+        "-g {output.graph} "
+        "-i {output.info} "
+        "&> {log}"
+
+
+rule s04_tune:
+    input:
+        data="adata.h5ad",
+        graph=join("model", MODEL_PAT, "discover.gml.gz"),
+        model=join("model", MODEL_PAT, "discover.pt"),
+    output:
+        model=join("model", MODEL_PAT, "tune.pt"),
+        info=join("model", MODEL_PAT, "info_tune.yaml"),
+    log:
+        join("model", MODEL_PAT, "tune.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade tune "
+        "-d {input.data} "
+        "-g {input.graph} "
+        "-m {input.model} "
+        "-o {output.model} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--tune-ctfact "
+        "--stratify dataset "
+        "--n-devices {resources.gpu} "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule s05_design:
+    input:
+        ctrl="ctrl.h5ad",
+        model=join("model", MODEL_PAT, "tune.pt"),
+        target=lambda wildcards: join("targets", f"{wildcards.target}.h5ad"),
+        candidates=lambda wildcards: join("targets", f"{wildcards.target}.txt"),
+    output:
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+        design_mod=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.pt"),
+        info=join("model", MODEL_PAT, "design", DESIGN_PAT, "info_design.yaml"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "design.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CASCADE_NUM_WORKERS=0; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade design "
+        "-d {input.ctrl} "
+        "-m {input.model} "
+        "-t {input.target} "
+        "--pool {input.candidates} "
+        "-o {output.design} "
+        "-u {output.design_mod} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--design-size {wildcards.size} "
+        "--design-scale-bias "
+        "--target-weight weight "
+        "--n-devices {resources.gpu} "
+        "--log-subdir design/target={wildcards.target}-size={wildcards.size} "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule s06_ctfact_prep:
+    input:
+        ctrl="ctrl.h5ad",
+        target=lambda wildcards: join("targets", f"{wildcards.target}.h5ad"),
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+    output:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "prep.h5ad"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact_prep.log"),
+    shell:
+        "python -u ctfact_prep.py "
+        "--ctrl {input.ctrl} "
+        "--target {input.target} "
+        "--design {input.design} "
+        "--output {output} "
+        "&> {log}"
+
+
+rule s06_ctfact:
+    input:
+        data=join("model", MODEL_PAT, "design", DESIGN_PAT, "prep.h5ad"),
+        model=join("model", MODEL_PAT, "tune.pt"),
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.pt"),
+    output:
+        data=join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact.h5ad"),
+        info=join("model", MODEL_PAT, "design", DESIGN_PAT, "info_ctfact.yaml"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CASCADE_NUM_WORKERS=0; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade counterfactual "
+        "-d {input.data} "
+        "-m {input.model} "
+        "-u {input.design} "
+        "-p {output.data} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--sample "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule check_dsgn:
+    input:
+        ctrl="ctrl.h5ad",
+        target="targets/{target}.h5ad",
+        model=join("model", MODEL_PAT, "tune.pt"),
+        scores=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.pt"),
+    output:
+        design_error_curve=join("model", MODEL_PAT, "design", DESIGN_PAT, "curve.pdf"),
+        design_scores=join("model", MODEL_PAT, "design", DESIGN_PAT, "scores.pdf"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "check_dsgn.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        # "set -e; "
+        # "export CASCADE_CUDA_REMAP=1; "
+        # "export CASCADE_NUM_WORKERS=0; "
+        # "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        # "set +e; "
+        "python -u check_dsgn.py "
+        "--ctrl {input.ctrl} "
+        "--target {input.target} "
+        "--model {input.model} "
+        "--scores {input.scores} "
+        "--design {input.design} "
+        "--design-error-curve {output.design_error_curve} "
+        "--design-scores {output.design_scores} "
+        "&> {log}; "
+        # "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule check_ctfact:
+    input:
+        markers="markers.yaml",
+        ctrl="ctrl.h5ad",
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+        target="targets/{target}.h5ad",
+        ctfact=join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact.h5ad"),
+    output:
+        explained=join("model", MODEL_PAT, "design", DESIGN_PAT, "explained.csv"),
+        expr_scatter=join("model", MODEL_PAT, "design", DESIGN_PAT, "expr_scatter.pdf"),
+        logfc_scatter=join(
+            "model", MODEL_PAT, "design", DESIGN_PAT, "logfc_scatter.pdf"
+        ),
+        logfc_violin=join("model", MODEL_PAT, "design", DESIGN_PAT, "logfc_violin.pdf"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "check_ctfact.log"),
+    threads: 16
+    shell:
+        "python -u check_ctfact.py "
+        "--markers {input.markers} "
+        "--ctrl {input.ctrl} "
+        "--target {input.target} "
+        "--design {input.design} "
+        "--ctfact {input.ctfact} "
+        "--explained {output.explained} "
+        "--expr-scatter {output.expr_scatter} "
+        "--logfc-scatter {output.logfc_scatter} "
+        "--logfc-violin {output.logfc_violin} "
+        "&> {log}"
+
+
+rule case_by_case:
+    input:
+        ctrl="ctrl.h5ad",
+        data="adata.h5ad",
+        target="targets/{target}.h5ad",
+        markers="markers.yaml",
+        model=join("model", MODEL_PAT, "tune.pt"),
+        scaffold="scaffold.gml.gz",
+        discover=join("model", MODEL_PAT, "discover.gml.gz"),
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.pt"),
+    output:
+        volcano=join("model", MODEL_PAT, "design", DESIGN_PAT, "volcano_{pert}.pdf"),
+        gsea=directory(join("model", MODEL_PAT, "design", DESIGN_PAT, "gsea_{pert}")),
+        explain=join("model", MODEL_PAT, "design", DESIGN_PAT, "explain_{pert}.gml"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "case_by_case_{pert}.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        # "set -e; "
+        # "export CASCADE_CUDA_REMAP=1; "
+        # "export CASCADE_NUM_WORKERS=0; "
+        # "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        # "set +e; "
+        "python -u case_by_case.py "
+        "--ctrl {input.ctrl} "
+        "--data {input.data} "
+        "--target {input.target} "
+        "--markers {input.markers} "
+        "--model {input.model} "
+        "--scaffold {input.scaffold} "
+        "--discover {input.discover} "
+        "--design {input.design} "
+        "--pert {wildcards.pert} "
+        "--volcano {output.volcano} "
+        "--gsea-dir {output.gsea} "
+        "--explain {output.explain} "
+        "&> {log}"
+        # "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"

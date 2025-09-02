@@ -1,0 +1,15 @@
+model:
+  nptc: 4
+  dz: 16
+  beta: 0.1
+  sps: L1
+  acyc: SpecNorm
+  lik: NegBin
+  lam: 0.1
+  alp: 0.5
+  run_sd: 1
+design:
+  size:
+    - 1
+    - 2
+    - 3

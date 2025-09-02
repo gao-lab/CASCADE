@@ -1,0 +1,16 @@
+Bootstrap: docker
+From: tensorflow/tensorflow:1.15.5-gpu-py3
+
+%environment
+    export PYTHONPATH=/opt/nobears:$PYTHONPATH
+
+%post
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC && \
+        apt update && \
+        apt install -y git && \
+        rm -rf /var/lib/apt/lists/*
+    git clone https://github.com/howchihlee/BNGPU /opt/nobears
+    pip install --no-cache-dir scipy networkx pyyaml anndata
+
+%runscript
+    exec python "$@"

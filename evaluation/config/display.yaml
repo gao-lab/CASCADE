@@ -1,0 +1,118 @@
+naming:
+  datasets:
+    Adamson-2016: Adamson-2016
+    Replogle-2022<br>RPE1: Replogle-2022-RPE1
+    Replogle-2022<br>K562-ess: Replogle-2022-K562-ess
+    Replogle-2022<br>K562-gwps: Replogle-2022-K562-gwps
+    Norman-2019: Norman-2019
+  methods:
+    PC: pc
+    GES: ges
+    GIES: gies
+    ICP: icp
+    NOTEARS: notears
+    DAGMA: dagma
+    NO-BEARS: nobears
+    DCDI: dcdi
+    DCD-FG: dcdfg
+    No change: no_change
+    Mean: mean
+    Additive: additive
+    Linear: linear
+    CPA: cpa
+    Biolord: biolord
+    GEARS: gears
+    scGPT: scgpt
+    scFoundation: scfoundation
+    STATE: state
+    CASCADE: cascade
+    CASCADE (exhaust): cascade_bf
+    CASCADE (optim): cascade_sb
+  metrics:
+    SHD: shd
+    log10 SHD: log10_shd
+    SID: sid
+    log10 SID: log10_sid
+    Accuracy: acc
+    F1 score: f1
+    Precision: prec
+    Recall: recall
+    AUROC: auroc
+    Avg precision: ap
+    Delta correlation: delta_pcc
+    Directional accuracy: dir_acc
+    Normalized MSE: normalized_mse
+    Prediction MSE: pred_mse
+    AUHRC: auhrc_exact
+    AUHRC (partial match): auhrc_partial
+  scf:
+    KEGG: kegg
+    TF-target: tf
+    PPI: ppi
+    Correlation: corr
+    Composite: kegg+tf+ppi+corr
+    Complete: cpl
+  ablation:
+    No latent: latent
+    No intervention: interv
+    No graph: graph
+    Full model: none
+  params:
+    Number of SVGD particles: nptc
+    Latent dimension: dz
+    KL weight: beta
+    Sparsity regularization: sps
+    Acyclicity regularization: acyc
+    Likelihood model: lik
+    Sparsity coefficient: lam
+    Acyclicity coefficient: alp
+
+palette:
+  methods:
+    PC: "#1f77b4"
+    GES: "#2ca02c"
+    GIES: "#98df8a"
+    ICP: "#bcbd22"
+    NOTEARS: "#8c564b"
+    DAGMA: "#c49c94"
+    NO-BEARS: "#e377c2"
+    DCDI: "#ff7f0e"
+    DCD-FG: "#ffbb78"
+    No change: "#c7c7c7"
+    Mean: "#7f7f7f"
+    Additive: "#1d77b4"
+    Linear: "#aec7e8"
+    CPA: "#ff7f0e"
+    Biolord: "#2ca02c"
+    GEARS: "#8c564b"
+    scGPT: "#bcbd22"
+    scFoundation: "#f7b6d2"
+    STATE: "#17becf"
+    CASCADE: "#9566bd"
+    CASCADE (exhaust): "#c5b0d5"
+    CASCADE (optim): "#9566bd"
+  ablation:
+    No latent: "#ffbb78"
+    No intervention: "#c49c94"
+    No graph: "#ff9896"
+    Full model: "#9467bd"
+#1d77b4
+#aec7e8
+#ff7f0e
+#ffbb78
+#2ca02c
+#98df8a
+#d62728
+#ff9896
+#9467bd
+#c5b0d5
+#8c564b
+#c49c94
+#e377c2
+#f7b6d2
+#7f7f7f
+#c7c7c7
+#bcbd22
+#dbdb8d
+#17becf
+#8edae5

@@ -1,0 +1,72 @@
+{
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "files.watcherExclude": {
+        "**/conda/**": true,
+        "**/renv/**": true,
+        "**/results/**": true,
+        "**/tmp/**": true,
+        "**/.renv/**": true,
+        "**/.ipynb_checkpoints/**": true,
+        "**/.virtual_documents/**": true,
+        "**/__pycache__/**": true,
+        "**/.pytest_cache/**": true,
+        "**/.snakemake/**": true,
+        "**/.slurm/**": true,
+        "**/.cache/**": true,
+        "**/.config/**": true,
+        "**/.results/**": true,
+        "**/.backup/**": true,
+        "**/.nv/**": true,
+        "**/.coverage*": true
+    },
+    "files.exclude": {
+        "**/conda/**": true,
+        "**/renv/binary/**": true,
+        "**/renv/cache/**": true,
+        "**/renv/index/**": true,
+        "**/renv/library/**": true,
+        "**/renv/source/**": true,
+        "**/renv/staging/**": true,
+        "**/results/**": true,
+        "**/.renv/**": true,
+        "**/.ipynb_checkpoints/**": true,
+        "**/.virtual_documents/**": true,
+        "**/__pycache__/**": true,
+        "**/.pytest_cache/**": true,
+        "**/.snakemake/**": true,
+        "**/.slurm/**": true,
+        "**/.cache/**": true,
+        "**/.config/**": true,
+        "**/.results/**": true,
+        "**/.backup/**": true,
+        "**/.nv/**": true,
+        "**/.coverage*": true
+    },
+    "editor.formatOnSave": true,
+    "python.defaultInterpreterPath": "./conda/bin/python",
+    "python.terminal.executeInFileDir": true,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.exclude": [
+        "**"
+    ],
+    "python.analysis.indexing": false,
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportShadowedImports": "none"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnPaste": false,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "livePreview.defaultPreviewPath": "./docs/_build/html/en"
+}

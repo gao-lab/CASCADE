@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%files
+    ./scGPT /opt/scGPT
+
+%environment
+    export PYTHONPATH=/opt/scGPT:$PYTHONPATH
+
+%post
+    export CONDA_OVERRIDE_CUDA="12.1"
+    apt update && apt install -y git build-essential && rm -rf /var/lib/apt/lists/*
+    micromamba install -n base -y conda-forge::python=3.10 nvidia::cuda-toolkit=12.1
+    micromamba run pip install --no-cache-dir \
+        cellxgene-census \
+        transformers \
+        wandb \
+        accelerate \
+        tensorboard \
+        ipython
+    micromamba run pip install --no-cache-dir git+https://github.com/bowang-lab/scGPT.git@706526a76d547de4ed711fa028c99be5bdf6ad8a
+    micromamba run pip install --no-cache-dir flash-attn==1.0.1
+    micromamba run pip install --no-cache-dir torch_cluster==1.6.2 -f https://data.pyg.org/whl/torch-2.1.2+cu121.html
+    micromamba run pip install --no-cache-dir torch_scatter==2.1.2 -f https://data.pyg.org/whl/torch-2.1.2+cu121.html
+    micromamba run pip install --no-cache-dir torch_sparse==0.6.18 -f https://data.pyg.org/whl/torch-2.1.2+cu121.html
+    micromamba run pip install --no-cache-dir torch-geometric -f https://pytorch-geometric.com/whl/torch-2.1.2+cu121.html
+    micromamba clean -y -a
+
+%runscript
+    exec micromamba run python "$@"

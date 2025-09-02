@@ -1,0 +1,10 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%post
+    micromamba install -n base -y -c conda-forge networkx pyyaml joblib tqdm anndata
+    micromamba run pip install --no-cache-dir causalicp
+    micromamba clean -y -a
+
+%runscript
+    exec micromamba run python "$@"

@@ -1,0 +1,261 @@
+from os.path import join
+
+
+configfile: "config.yaml"
+
+
+MODEL_PAT = (
+    "nptc={nptc}-dz={dz}-beta={beta}-sps={sps}-acyc={acyc}-lik={lik}-"
+    "lam={lam}-alp={alp}-run_sd={run_sd}"
+)
+DESIGN_PAT = "size={size}"
+
+
+rule all:
+    input:
+        "design_summary.csv",
+        expand(
+            join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact.h5ad"),
+            **config["model"],
+            **config["design"],
+        ),
+
+
+rule summarize_design:
+    input:
+        expand(
+            join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+            **config["model"],
+            **config["design"],
+        ),
+    output:
+        "design_summary.csv",
+    params:
+        pattern=lambda wildcards: join(
+            "model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"
+        ),
+    script:
+        "summarize_design.py"
+
+
+rule s01_preprocess:
+    input:
+        "../../data/datasets/Xu-2022.h5ad",
+        "../../data/datasets/Xu-2022-BM.h5ad",
+        "../../data/datasets/Huang-2020.h5ad",
+        "../../data/datasets/Xie-2021.h5ad",
+        "../../data/datasets/NeurIPS-2021-Multiome-GEX.h5ad",
+        "../../data/datasets/NeurIPS-2021-CITE-GEX.h5ad",
+        "../../data/datasets/Norman-2019.h5ad",
+        "../../data/scaffold/KEGG/inferred_kegg_gene_only.gml.gz",
+        "../../data/scaffold/TF-target/TF-target.gml.gz",
+        "../../data/scaffold/BioGRID/biogrid.gml.gz",
+        "../../data/scaffold/GTEx/corr.gml.gz",
+    output:
+        "norman.h5ad",
+        "ctrl.h5ad",
+        "target.h5ad",
+        "scaffold.gml.gz",
+        "go_lsi.csv.gz",
+        "candidates.txt",
+    log:
+        "preprocess.log",
+    shell:
+        "python -u preprocess.py &> {log}"
+
+
+rule s02_discover:
+    input:
+        data="norman.h5ad",
+        scaffold="scaffold.gml.gz",
+        latent_data="go_lsi.csv.gz",
+    output:
+        model=join("model", MODEL_PAT, "discover.pt"),
+        info=join("model", MODEL_PAT, "info_discover.yaml"),
+    log:
+        join("model", MODEL_PAT, "discover.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    params:
+        log_dir=lambda wildcards: join(
+            "model", MODEL_PAT.format(**wildcards), "log_dir"
+        ),
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade discover "
+        "-d {input.data} "
+        "-m {output.model} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--n-particles {wildcards.nptc} "
+        "--latent-dim {wildcards.dz} "
+        "--beta {wildcards.beta} "
+        "--sparse-mod {wildcards.sps} "
+        "--acyc-mod {wildcards.acyc} "
+        "--latent-mod EmbLatent "
+        "--lik-mod {wildcards.lik} "
+        "--scaffold-graph {input.scaffold} "
+        "--latent-data {input.latent_data} "
+        "--lam {wildcards.lam} "
+        "--alpha {wildcards.alp} "
+        "--random-seed {wildcards.run_sd} "
+        "--log-dir {params.log_dir} "
+        "--n-devices {resources.gpu} "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule s03_acyclify:
+    input:
+        join("model", MODEL_PAT, "discover.pt"),
+    output:
+        graph=join("model", MODEL_PAT, "discover.gml.gz"),
+        info=join("model", MODEL_PAT, "info_acyclify.yaml"),
+    log:
+        join("model", MODEL_PAT, "acyclify.log"),
+    threads: lambda wildcards: int(wildcards.nptc)
+    shell:
+        "cascade acyclify "
+        "-m {input} "
+        "-g {output.graph} "
+        "-i {output.info} "
+        "&> {log}"
+
+
+rule s04_tune:
+    input:
+        data="norman.h5ad",
+        graph=join("model", MODEL_PAT, "discover.gml.gz"),
+        model=join("model", MODEL_PAT, "discover.pt"),
+    output:
+        model=join("model", MODEL_PAT, "tune.pt"),
+        info=join("model", MODEL_PAT, "info_tune.yaml"),
+    log:
+        join("model", MODEL_PAT, "tune.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade tune "
+        "-d {input.data} "
+        "-g {input.graph} "
+        "-m {input.model} "
+        "-o {output.model} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--tune-ctfact "
+        "--n-devices {resources.gpu} "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule s05_design:
+    input:
+        ctrl="ctrl.h5ad",
+        model=join("model", MODEL_PAT, "tune.pt"),
+        target="target.h5ad",
+        candidates="candidates.txt",
+    output:
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+        design_mod=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.pt"),
+        info=join("model", MODEL_PAT, "design", DESIGN_PAT, "info_design.yaml"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "design.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CASCADE_NUM_WORKERS=0; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade design "
+        "-d {input.ctrl} "
+        "-m {input.model} "
+        "-t {input.target} "
+        "--pool {input.candidates} "
+        "-o {output.design} "
+        "-u {output.design_mod} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--design-size {wildcards.size} "
+        "--design-scale-bias "
+        "--target-weight weight "
+        "--n-devices {resources.gpu} "
+        "--log-subdir design/size={wildcards.size} "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"
+
+
+rule s06_ctfact_prep:
+    input:
+        ctrl="ctrl.h5ad",
+        target="target.h5ad",
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.csv"),
+    output:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "prep.h5ad"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact_prep.log"),
+    shell:
+        "python -u ctfact_prep.py "
+        "--ctrl {input.ctrl} "
+        "--target {input.target} "
+        "--design {input.design} "
+        "--output {output} "
+        "&> {log}"
+
+
+rule s06_ctfact:
+    input:
+        data=join("model", MODEL_PAT, "design", DESIGN_PAT, "prep.h5ad"),
+        model=join("model", MODEL_PAT, "tune.pt"),
+        design=join("model", MODEL_PAT, "design", DESIGN_PAT, "design.pt"),
+    output:
+        data=join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact.h5ad"),
+        info=join("model", MODEL_PAT, "design", DESIGN_PAT, "info_ctfact.yaml"),
+    log:
+        join("model", MODEL_PAT, "design", DESIGN_PAT, "ctfact.log"),
+    threads: 8
+    resources:
+        gpu=1,
+    shell:
+        "set -e; "
+        "export CASCADE_CUDA_REMAP=1; "
+        "export CASCADE_NUM_WORKERS=0; "
+        "export CUDA_VISIBLE_DEVICES=$(cascade devmgr acquire --n-devices {resources.gpu}); "
+        "set +e; "
+        "cascade counterfactual "
+        "-d {input.data} "
+        "-m {input.model} "
+        "-u {input.design} "
+        "-p {output.data} "
+        "-i {output.info} "
+        "--interv-key knockup "
+        "--use-covariate covariate "
+        "--use-size ncounts "
+        "--use-layer counts "
+        "--sample "
+        "-v "
+        "&> {log}; "
+        "cascade devmgr release --devices ${{CUDA_VISIBLE_DEVICES}}"

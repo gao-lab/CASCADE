@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: ghcr.io/astral-sh/uv:debian
+
+%environment
+    export PATH="/opt/bin:$PATH"
+
+%post
+    apt update && apt install -y git-lfs && rm -rf /var/lib/apt/lists/*
+    git lfs install
+    git clone https://github.com/ArcInstitute/state.git /opt/state
+    XDG_DATA_HOME=/opt/uv UV_TOOL_DIR=/opt/uv uv tool install -e /opt/state
+    git clone https://huggingface.co/arcinstitute/SE-600M /opt/SE-600M
+
+%runscript
+    exec state "$@"

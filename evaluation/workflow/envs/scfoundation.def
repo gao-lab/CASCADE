@@ -1,0 +1,33 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%files
+    ./scFoundation /opt/scFoundation
+
+%environment
+    export PYTHONPATH=/opt/scFoundation/model:/opt/scFoundation:$PYTHONPATH
+
+%post
+    export CONDA_OVERRIDE_CUDA="11.6"
+    micromamba install -n base -y -c conda-forge -c pyg \
+        pytorch-gpu \
+        pyg \
+        numpy \
+        pandas \
+        tqdm \
+        scikit-learn \
+        scanpy \
+        networkx \
+        dcor \
+        tbb \
+        ipdb \
+        einops \
+        omegaconf \
+        filelock \
+        pyyaml \
+        anndata
+    micromamba run pip install --no-cache-dir local-attention
+    micromamba clean -y -a
+
+%runscript
+    exec micromamba run python "$@"

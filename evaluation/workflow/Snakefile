@@ -1,0 +1,179 @@
+configfile: "config/config.yaml"
+
+
+rule all:
+    input:
+        # "sum/sim_disc_true_overview.pdf",
+        # "sum/sim_disc_true_n_vars.pdf",
+        # "sum/sim_disc_true_int_f.pdf",
+        # "sum/sim_disc_scf_true_heatmap_shd.pdf",
+        # "sum/sim_disc_scf_true_heatmap_ap.pdf",
+        # "sum/sim_disc_scf_true_lines.pdf",
+        # "sum/sim_scale_time.pdf",
+        # "sum/sim_scale_metrics.pdf",
+        # "sum/actual_disc_resp_test_dist.pdf",
+        # "sum/actual_disc_resp_test_dist_diff.pdf",
+        # "sum/actual_disc_resp_test_acc.pdf",
+        # "sum/actual_disc_hparams_resp_test_dist.pdf",
+        # "sum/actual_disc_hparams_resp_test_dist_diff.pdf",
+        # "sum/actual_disc_hparams_resp_test_acc.pdf",
+        # "sum/.actual_disc_full.flag",
+        "sum/actual_ctfact_test_single.pdf",
+        "sum/actual_ctfact_test_double.pdf",
+        # "sum/actual_ctfact_ablt_test_single.pdf",
+        # "sum/actual_ctfact_ablt_test_double.pdf",
+        # "sum/actual_ctfact_hparams_test_delta_pcc_single.pdf",
+        # "sum/actual_ctfact_hparams_test_normalized_mse_single.pdf",
+        # "sum/actual_ctfact_hparams_test_delta_pcc_double.pdf",
+        # "sum/actual_ctfact_hparams_test_normalized_mse_double.pdf",
+        # "sum/actual_dsgn_test.pdf",
+    localrule: True
+
+
+module sim_disc:
+    snakefile:
+        "rules/sim_disc.smk"
+    config:
+        {
+            **config["sim_disc"],
+            **{k: v for k, v in config.items() if k != "sim_disc"},
+        }
+
+
+module sim_disc_scf:
+    snakefile:
+        "rules/sim_disc_scf.smk"
+    config:
+        {
+            **config["sim_disc_scf"],
+            **{k: v for k, v in config.items() if k != "sim_disc_scf"},
+        }
+
+
+module sim_scale:
+    snakefile:
+        "rules/sim_scale.smk"
+    config:
+        {
+            **config["sim_scale"],
+            **{k: v for k, v in config.items() if k != "sim_scale"},
+        }
+
+
+module actual_disc:
+    snakefile:
+        "rules/actual_disc.smk"
+    config:
+        {
+            **config["actual_disc"],
+            **{k: v for k, v in config.items() if k != "actual_disc"},
+        }
+
+
+module actual_disc_hparams:
+    snakefile:
+        "rules/actual_disc_hparams.smk"
+    config:
+        {
+            **config["actual_disc_hparams"],
+            **{k: v for k, v in config.items() if k != "actual_disc_hparams"},
+        }
+
+
+module actual_disc_full:
+    snakefile:
+        "rules/actual_disc_full.smk"
+    config:
+        {
+            **config["actual_disc_full"],
+            **{k: v for k, v in config.items() if k != "actual_disc_full"},
+        }
+
+
+module actual_ctfact:
+    snakefile:
+        "rules/actual_ctfact.smk"
+    config:
+        {
+            **config["actual_ctfact"],
+            **{k: v for k, v in config.items() if k != "actual_ctfact"},
+        }
+
+
+module actual_ctfact_ablt:
+    snakefile:
+        "rules/actual_ctfact_ablt.smk"
+    config:
+        {
+            **config["actual_ctfact_ablt"],
+            **{k: v for k, v in config.items() if k != "actual_ctfact_ablt"},
+        }
+
+
+module actual_ctfact_hparams:
+    snakefile:
+        "rules/actual_ctfact_hparams.smk"
+    config:
+        {
+            **config["actual_ctfact_hparams"],
+            **{k: v for k, v in config.items() if k != "actual_ctfact_hparams"},
+        }
+
+
+module actual_dsgn:
+    snakefile:
+        "rules/actual_dsgn.smk"
+    config:
+        {
+            **config["actual_dsgn"],
+            **{k: v for k, v in config.items() if k != "actual_dsgn"},
+        }
+
+
+module actual_dsgn_hparams:
+    snakefile:
+        "rules/actual_dsgn_hparams.smk"
+    config:
+        {
+            **config["actual_dsgn_hparams"],
+            **{k: v for k, v in config.items() if k != "actual_dsgn_hparams"},
+        }
+
+
+use rule * from sim_disc as sim_disc_*
+
+
+use rule * from sim_disc_scf as sim_disc_scf_*
+
+
+use rule * from sim_scale as sim_scale_*
+
+
+use rule * from actual_disc as actual_disc_*
+
+
+use rule * from actual_disc_hparams as actual_disc_hparams_*
+
+
+use rule * from actual_disc_full as actual_disc_full_*
+
+
+use rule * from actual_ctfact as actual_ctfact_*
+
+
+use rule * from actual_ctfact_ablt as actual_ctfact_ablt_*
+
+
+use rule * from actual_ctfact_hparams as actual_ctfact_hparams_*
+
+
+use rule * from actual_dsgn as actual_dsgn_*
+
+
+use rule * from actual_dsgn_hparams as actual_dsgn_hparams_*
+
+
+include: "rules/data.smk"
+include: "rules/methods.smk"
+include: "rules/metrics.smk"
+include: "rules/plot.smk"

@@ -1,0 +1,8 @@
+Bootstrap: docker
+From: divkal/nv-cdt-py3.6
+
+%post
+    pip install --no-cache-dir anndata
+
+%runscript
+    exec python "$@"

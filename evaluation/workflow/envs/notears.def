@@ -1,0 +1,18 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%post
+    apt update && apt install -y git && rm -rf /var/lib/apt/lists/*
+    micromamba install -n base -y -c conda-forge pytorch-gpu networkx pyyaml anndata
+    git clone https://github.com/xunzheng/notears
+    cd notears
+    sed -i \
+        -e 's|from_numpy|as_tensor|g' \
+        -e 's|input.detach()|&.cpu()|g' \
+        notears/*.py  # Fix GPU support
+    micromamba run pip install --no-cache-dir .
+    micromamba clean -y -a
+    rm -r notears
+
+%runscript
+    exec micromamba run python "$@"

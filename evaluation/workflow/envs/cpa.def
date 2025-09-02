@@ -1,0 +1,16 @@
+Bootstrap: docker
+From: mambaorg/micromamba
+
+%post
+    apt update && apt install -y libx11-6 && rm -rf /var/lib/apt/lists/*
+    micromamba install -n base -y -c conda-forge 'python<3.11'
+    micromamba run pip install --no-cache-dir \
+        'scipy<1.13' \
+        networkx \
+        pyyaml \
+        scanpy \
+        cpa-tools
+    micromamba clean -y -a
+
+%runscript
+    exec micromamba run python "$@"
